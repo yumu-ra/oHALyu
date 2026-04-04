@@ -5,8 +5,6 @@ Time is life. If developers spend a lot of time repeating the process of "buildi
 ## 怎么用
 1. 无额外依赖，直接引入项目
 2. 示例看c源文件或这单个文件夹内的readme
-## 后续
-不定时更新，只加高频实用封装
 
 ## 许可证
-因为比非完全原创不存在许可证
+因为并非完全原创不存在许可证
