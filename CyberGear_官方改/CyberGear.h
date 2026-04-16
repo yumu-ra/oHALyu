@@ -8,6 +8,7 @@
 
 #include "main.h"
 #include "can.h"
+#include <stdbool.h>
  
  #define Set_mode 		 'j'				//设置控制模式
  #define Set_parameter 'p'				//设置参数

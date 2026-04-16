@@ -1,5 +1,6 @@
 #include "CyberGear.h"
 #include "string.h"
+#include "main.h"
  #define P_MIN -12.5f
  #define P_MAX 12.5f
  #define V_MIN -44.0f 
@@ -110,18 +111,18 @@ void RobStride_Motor_Analysis(RobStride_Motor_t *motor, uint8_t *DataFrame, uint
 	}
 	else 
 	{
-		if (uint8_t((ID_ExtId&0xFF00)>>8) == motor->CAN_ID)
+		if ((uint8_t)((ID_ExtId&0xFF00)>>8) == motor->CAN_ID)
 		{
-			if (int((ID_ExtId&0x3F000000)>>24) == 2)
+			if ((int)((ID_ExtId&0x3F000000)>>24) == 2)
 			{
 				motor->Pos_Info.Angle =  uint16_to_float(DataFrame[0]<<8|DataFrame[1],P_MIN,P_MAX,16);
 				motor->Pos_Info.Speed =  uint16_to_float(DataFrame[2]<<8|DataFrame[3],V_MIN,V_MAX,16);
 				motor->Pos_Info.Torque = uint16_to_float(DataFrame[4]<<8|DataFrame[5],T_MIN,T_MAX,16);
 				motor->Pos_Info.Temp = (DataFrame[6]<<8|DataFrame[7])*0.1;
-				motor->error_code = uint8_t((ID_ExtId&0x3F0000)>>16);
-				motor->Pos_Info.pattern = uint8_t((ID_ExtId&0xC00000)>>22);
+				motor->error_code = (uint8_t)((ID_ExtId&0x3F0000)>>16);
+				motor->Pos_Info.pattern = (uint8_t)((ID_ExtId&0xC00000)>>22);
 			}
-			else if (int((ID_ExtId&0x3F000000)>>24) == 17)
+			else if ((int)((ID_ExtId&0x3F000000)>>24) == 17)
 			{
 				for (int index_num = 0; index_num <= 13; index_num++)
 				{
@@ -129,7 +130,7 @@ void RobStride_Motor_Analysis(RobStride_Motor_t *motor, uint8_t *DataFrame, uint
 						switch(index_num)
 						{
 							case 0:
-								motor->drw.run_mode.data = uint8_t(DataFrame[4]);
+								motor->drw.run_mode.data = (uint8_t)(DataFrame[4]);
 								break;
 							case 1:
 								motor->drw.iq_ref.data = Byte_to_float(DataFrame);
@@ -175,7 +176,7 @@ void RobStride_Motor_Analysis(RobStride_Motor_t *motor, uint8_t *DataFrame, uint
 			}
 			else if ((uint8_t)((ID_ExtId & 0xFF)) == 0xFE)
 			{
-				motor->CAN_ID = uint8_t((ID_ExtId & 0xFF00)>>8); 
+				motor->CAN_ID = (uint8_t)((ID_ExtId & 0xFF00)>>8); 
 				memcpy(&motor->Unique_ID, DataFrame, 8);
 			}
 		}
@@ -195,7 +196,7 @@ void RobStride_Get_CAN_ID(RobStride_Motor_t *motor)
 	TxMessage.RTR = CAN_RTR_DATA;
 	TxMessage.DLC = 8;
 	TxMessage.ExtId = Communication_Type_Get_ID<<24|motor->Master_CAN_ID <<8|motor->CAN_ID;
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 /*******************************************************************************
 * @功能      	: RobStride电机运控模式  （通信类型1）
@@ -239,7 +240,7 @@ void RobStride_Motor_move_control(RobStride_Motor_t *motor, float Torque, float 
 	txdata[5] = float_to_uint(motor->Motor_Set_All.set_Kp,KP_MIN, KP_MAX, 16); 
 	txdata[6] = float_to_uint(motor->Motor_Set_All.set_Kd,KD_MIN, KD_MAX, 16)>>8; 
 	txdata[7] = float_to_uint(motor->Motor_Set_All.set_Kd,KD_MIN, KD_MAX, 16); 
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 //MIT模式使能
 void RobStride_Motor_MIT_Enable(RobStride_Motor_t *motor)
@@ -257,7 +258,7 @@ void RobStride_Motor_MIT_Enable(RobStride_Motor_t *motor)
 	txdata[5] = 0xFF;
 	txdata[6] = 0xFF;
 	txdata[7] = 0xFC;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox);
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox);
 }
 
 //MIT模式失能
@@ -276,7 +277,7 @@ void RobStride_Motor_MIT_Disable(RobStride_Motor_t *motor)
 	txdata[5] = 0xFF;
 	txdata[6] = 0xFF;
 	txdata[7] = 0xFD;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox);
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox);
 }
 
 //MIT模式清除或检查错误
@@ -296,7 +297,7 @@ void RobStride_Motor_MIT_ClearOrCheckError(RobStride_Motor_t *motor, uint8_t F_C
 	txdata[5] = 0xFF;
 	txdata[6] = F_CMD;
 	txdata[7] = 0xFB;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 
 //MIT设置电机运行模式
@@ -316,7 +317,7 @@ void RobStride_Motor_MIT_SetMotorType(RobStride_Motor_t *motor, uint8_t F_CMD)
 	txdata[5] = 0xFF;
 	txdata[6] = F_CMD;
 	txdata[7] = 0xFC;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 
 //MIT设置电机ID
@@ -336,7 +337,7 @@ void RobStride_Motor_MIT_SetMotorId(RobStride_Motor_t *motor, uint8_t F_CMD)
 	txdata[5] = 0xFF;
 	txdata[6] = F_CMD;
 	txdata[7] = 0x01;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 
 
@@ -358,7 +359,7 @@ void RobStride_Motor_MIT_Control(RobStride_Motor_t *motor, float Angle, float Sp
 	txdata[5] = float_to_uint(Kd, KD_MIN, KD_MAX, 12)>>4;
 	txdata[6] = float_to_uint(Kd, KD_MIN, KD_MAX, 12)<<4 | float_to_uint(Torque, T_MIN, T_MAX, 12)>>8;
 	txdata[7] = float_to_uint(Torque, T_MIN, T_MAX, 12);
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 
 //MIT位置模式
@@ -372,7 +373,7 @@ void RobStride_Motor_MIT_PositionControl(RobStride_Motor_t *motor, float positio
 	txMsg.DLC = 8; 	//设置数据长度
 	memcpy(&txdata[0], &position_rad, 4); 	//将位置数据复制到发送数据数组中
 	memcpy(&txdata[4], &speed_rad_per_s, 4); 	//将速度数据复制到发送数据数组中
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 // MIT模式速度控制实现
 void RobStride_Motor_MIT_SpeedControl(RobStride_Motor_t *motor, float speed_rad_per_s, float current_limit)
@@ -385,7 +386,7 @@ void RobStride_Motor_MIT_SpeedControl(RobStride_Motor_t *motor, float speed_rad_
 	txMsg.DLC = 8; 	//设置数据长度
 	memcpy(&txdata[0], &speed_rad_per_s, 4);
 	memcpy(&txdata[4], &current_limit, 4);
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox);
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox);
 }
 
 //MIT零点设置模式
@@ -405,7 +406,7 @@ void RobStride_Motor_MIT_SetZeroPos(RobStride_Motor_t *motor)
 	txdata[5] = 0xFF;
 	txdata[6] = 0xFF;
 	txdata[7] = 0xFE;
-	HAL_CAN_AddTxMessage(&hcan, &txMsg, txdata, &Mailbox); 	//发送CAN消息
+	HAL_CAN_AddTxMessage(&hcan1, &txMsg, txdata, &Mailbox); 	//发送CAN消息
 }
 
 /*******************************************************************************
@@ -536,7 +537,7 @@ void Enable_Motor(RobStride_Motor_t *motor)
 		TxMessage.RTR = CAN_RTR_DATA;
 		TxMessage.DLC = 8;
 		TxMessage.ExtId = Communication_Type_MotorEnable<<24|motor->Master_CAN_ID<<8|motor->CAN_ID;
-		HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+		HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 	}
 }
 /*******************************************************************************
@@ -561,7 +562,7 @@ void Disenable_Motor(RobStride_Motor_t *motor, uint8_t clear_error)
 		TxMessage.RTR = CAN_RTR_DATA;
 		TxMessage.DLC = 8;
 		TxMessage.ExtId = Communication_Type_MotorStop<<24|motor->Master_CAN_ID<<8|motor->CAN_ID;
-		HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+		HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 		Set_RobStride_Motor_parameter(motor, 0X7005, move_control_mode, Set_mode);
 	}
 
@@ -592,13 +593,13 @@ void Set_RobStride_Motor_parameter(RobStride_Motor_t *motor, uint16_t Index, flo
 	}
 	else if (Value_mode == 'j')
 	{
-		motor->Motor_Set_All.set_motor_mode = int(Value);
+		motor->Motor_Set_All.set_motor_mode = (int)(Value);
 		txdata[4] = (uint8_t)Value;
 		txdata[5] = 0x00; 
 		txdata[6] = 0x00; 
 		txdata[7] = 0x00; 
 	}
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 /*******************************************************************************
 * @功能      	: RobStride电机单个参数读取 （通信类型17）
@@ -616,7 +617,7 @@ void Get_RobStride_Motor_parameter(RobStride_Motor_t *motor, uint16_t Index)
 	TxMessage.RTR = CAN_RTR_DATA;
 	TxMessage.DLC = 8;
 	TxMessage.ExtId = Communication_Type_GetSingleParameter<<24|motor->Master_CAN_ID<<8|motor->CAN_ID;
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 /*******************************************************************************
 * @功能      	: RobStride电机设置CAN_ID （通信类型7）
@@ -633,7 +634,7 @@ void Set_CAN_ID(RobStride_Motor_t *motor, uint8_t Set_CAN_ID)
 	TxMessage.RTR = CAN_RTR_DATA;
 	TxMessage.DLC = 8;
 	TxMessage.ExtId = Communication_Type_Can_ID<<24|Set_CAN_ID<<16|motor->Master_CAN_ID<<8|motor->CAN_ID;
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 /*******************************************************************************
 * @功能      	: RobStride电机设置机械零点 （通信类型6）
@@ -651,7 +652,7 @@ void Set_ZeroPos(RobStride_Motor_t *motor)
 	TxMessage.DLC = 8;
 	TxMessage.ExtId = Communication_Type_SetPosZero<<24|motor->Master_CAN_ID<<8|motor->CAN_ID;
 	txdata[0] = 1;
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 	Enable_Motor(motor);
 }
 
@@ -677,7 +678,7 @@ void RobStride_Motor_MotorDataSave(RobStride_Motor_t *motor)
 	txdata[5] = 0x06;
 	txdata[6] = 0x07;
 	txdata[7] = 0x08;
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 
 /*******************************************************************************
@@ -705,7 +706,7 @@ void RobStride_Motor_BaudRateChange(RobStride_Motor_t *motor, uint8_t F_CMD)
 	txdata[5] = 0x06;
 	txdata[6] = F_CMD;
 	txdata[7] = 0x08; 	//这一字节无所谓，填什么都可以，这里写的是0x08
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 
 /*******************************************************************************
@@ -731,7 +732,7 @@ void RobStride_Motor_ProactiveEscalationSet(RobStride_Motor_t *motor, uint8_t F_
 	txdata[5] = 0x06;
 	txdata[6] = F_CMD;
 	txdata[7] = 0x08; 	//这一字节无所谓，填什么都可以，这里写的是0x08
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 
 /*******************************************************************************
@@ -758,7 +759,7 @@ void RobStride_Motor_MIT_MotorModeSet(RobStride_Motor_t *motor, uint8_t F_CMD)
 	txdata[5] = 0xFF;
 	txdata[6] = F_CMD;
 	txdata[7] = 0xFD; 	//这一字节无所谓，填什么都可以，这里写的是0x08
-  HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+  HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 
 
@@ -803,7 +804,7 @@ void RobStride_Motor_MotorModeSet(RobStride_Motor_t *motor, uint8_t F_CMD)
 	txdata[5] = 0x06;
 	txdata[6] = F_CMD;
 	txdata[7] = 0x08; 	//这个一位随便填，此处填0x08
-   HAL_CAN_AddTxMessage(&hcan, &TxMessage, txdata, &Mailbox); // 发送CAN消息
+   HAL_CAN_AddTxMessage(&hcan1, &TxMessage, txdata, &Mailbox); // 发送CAN消息
 }
 
 // 初始化电机结构体
