@@ -18,24 +18,34 @@
 ### 2. 主循环用法 Main Loop Usage
 
 核心主循环推荐如下结构（建议通过变量`mode`实现控制场景切换，每个`case`对应一种典型功能，具体见 main.c 示例）：
-*** 请注意文档直接引用官方，在使用时请将逻辑替换为C ***
 ```c
-uint8_t mode = 0; // 外部赋值，决定当前控制功能
-
-while (1) {
-    switch(mode) {
-        case 0: RobStride_01.Enable_Motor(); break;
-        case 1: RobStride_01.Disenable_Motor(1); break;
-        case 2: RobStride_01.RobStride_Motor_move_control(5, 0, 0, 0.0, 0.0); break;
-        case 3: RobStride_01.RobStride_Motor_Pos_control(2.0, 2); HAL_Delay(5); break;
-        case 4: RobStride_01.RobStride_Motor_Speed_control(3.5, 5.0); HAL_Delay(5); break;
-        case 5: RobStride_01.RobStride_Motor_current_control(1.2); HAL_Delay(5); break;
-        // ... 其他case见main.c
-        // MIT协议专用接口见后面注意事项
-        default: break;
+RobStride_Motor_t * motor[8];
+uint8_t motor_id[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
+/**
+ * @brief  电机使能
+ * @retval None
+*/
+void Motor_MIT_Enable(void){
+  for (int i = 0; i < 8; i++){
+    if (motor[i] == NULL){
+      motor[i] = (RobStride_Motor_t *) pvPortMalloc(sizeof(RobStride_Motor_t));
+      if (motor[i] == NULL){
+        continue;
+      }
+      RobStride_Motor_init(motor[i], motor_id[i], true);
     }
-    mode = 23;
-    HAL_Delay(50);
+    RobStride_Motor_MIT_Enable(motor[i]);
+  }
+}
+/**
+ * @brief  电机禁用
+ * @retval None
+*/
+void Motor_MIT_Disable(void){
+  for (int i = 0; i < 8; i++){
+    RobStride_Motor_MIT_Disable(motor[i]);
+    vPortFree(motor[i]);
+  }
 }
 ```
 
